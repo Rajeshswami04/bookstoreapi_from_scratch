@@ -1,0 +1,110 @@
+import express from "express"
+import { connectDB } from "../dbconnect/db.js"
+import { Book } from "../models/Book.js";
+import { Author } from "../models/Author.js";
+
+export const addbook = async (req, res) => {
+    try {
+        await connectDB();
+        const { id, author, copies, title, description, edition } = req.body;
+        if (!id || !author || !title || !description) {
+            return res.status(401).json({ message: 'all mandatory field are not filled ,id author title desc is needed' });
+        }
+        const book = new Book({
+            id, author: author.trim(), copies, title: title.trim(), description: description.trim(), edition
+        });
+        await book.save();
+        return res.status(200).json({message:"successfully added"});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: 'internal server error in add books' });
+    }
+}
+export const updatebook = async (req, res) => {
+    try {
+        await connectDB();
+        const { id } = req.params; // id will be taken from params;
+        const allowed = ['copies', 'title', 'description', 'edition', 'author'];
+        const updated = {};
+        Object.keys(req.body).forEach((key) => {
+            if (allowed.includes(key)) {
+                updated[key] = req.body[key];
+            }
+        });
+        if (Object.keys(updated).length === 0) {
+            return res.status(400).json({ message: 'no valid updated are there' });
+        }
+        const update = await Book.findOneAndUpdate({ id }, updated, { new: true, runValidators: true });
+        if (!update) { return res.status(401).json({ message: "no users found" }) }
+        return res.status(200).json({ message: "successfully updated data" });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "error in updating book" });
+    }
+}
+
+
+export const deletebook = async (req, res) => {
+    try {
+        await connectDB();
+        const { id } = req.params;
+        const book = await Book.findOneAndDelete({ id });
+        if (book) { return res.status(200).json({ message: 'deleted successfully' }); }
+        return res.status(404).json({ message: "book not found" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "internal server error" });
+    }
+}
+
+export const getbookbytitle = async (req, res) => {
+    try {
+        await connectDB();
+        const  title = req.query.title;
+        // console.log(title)
+        if (!title) {
+            return res.status(401).json({ message: "parameter query needed bro " });
+        }
+        const book = await Book.find({ title: { $regex: title, $options: 'i' } }).lean();
+        // console.log(book)
+        if (book.length === 0) {
+            return res.status(401).json({ message: "book is not found" });
+        }
+        return res.status(200).json({ message: "books fetched successfully", book });
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "internal server error" });
+    }
+}
+
+export const getallbookbyauthor = async (req, res) => {
+    try {
+        await connectDB();
+        const author = req.query.author;
+        if (!author) {
+            return res.status(400).json({ message: "author is not found in parameter query" });
+        }
+        const books = await Book.find({ author: { $regex: author, $options: 'i' } }).lean();
+        if (books.length === 0) {
+            return res.status(401).json({ message: "book not found" });
+        }
+        return res.json({ books, message: "books fetched successfully" });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "internal server error" });
+    }
+}
+
+
+export const getallbooks = async (req, res) => {
+    try {
+        await connectDB();
+        const books = await Book.find({});
+        res.status(200).json({ message: "all books fetched successfully", books });
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "internal server error" });
+    }
+}
+
