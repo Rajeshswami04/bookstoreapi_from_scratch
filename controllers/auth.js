@@ -50,13 +50,6 @@ export const signin=async(req,res)=>{
 }
 
 
-// export const verifyemail=async(req,res)=>{
-//     try {
-
-//     } catch (error) {
-        
-//     }
-// }
 
 
 export const forgotpassword=async(req,res)=>{

@@ -14,7 +14,7 @@ export const addbook = async (req, res) => {
             id, author: author.trim(), copies, title: title.trim(), description: description.trim(), edition
         });
         await book.save();
-        return res.status(200).json({message:"successfully added"});
+        return res.status(200).json({ message: "successfully added" });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: 'internal server error in add books' });
@@ -60,17 +60,29 @@ export const deletebook = async (req, res) => {
 export const getbookbytitle = async (req, res) => {
     try {
         await connectDB();
-        const  title = req.query.title;
+        const title = req.query.title;
+        const page = parseInt(req.params.page) || 1;
+        const limit = parseInt(req.params.limit) || 10;
+        const skip = (page - 1) * limit;
         // console.log(title)
         if (!title) {
             return res.status(401).json({ message: "parameter query needed bro " });
         }
-        const book = await Book.find({ title: { $regex: title, $options: 'i' } }).lean();
+        const book = await Book.find({ title: { $regex: title, $options: 'i' } }).skip(skip).limit(limit).sort({ createdAt: -1 });
         // console.log(book)
         if (book.length === 0) {
             return res.status(401).json({ message: "book is not found" });
         }
-        return res.status(200).json({ message: "books fetched successfully", book });
+        const totalBooks = await Book.countDocuments();
+        return res.status(200).json({
+            message: "books fetched successfully", book,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalBooks / limit),
+                totalItems: totalBooks,
+                pageSize: limit
+            }
+        });
 
     } catch (error) {
         console.log(error)
@@ -82,14 +94,28 @@ export const getallbookbyauthor = async (req, res) => {
     try {
         await connectDB();
         const author = req.query.author;
+        const page = parseInt(req.params.page) || 1;
+        const limit = parseInt(req.params.limit) || 10;
+        const skip = (page - 1) * limit;
         if (!author) {
             return res.status(400).json({ message: "author is not found in parameter query" });
         }
-        const books = await Book.find({ author: { $regex: author, $options: 'i' } }).lean();
+
+        const books = await Book.find({ author: { $regex: author, $options: 'i' } }).skip(skip).limit(limit).sort({ createdAt: -1 });
         if (books.length === 0) {
             return res.status(401).json({ message: "book not found" });
         }
-        return res.json({ books, message: "books fetched successfully" });
+
+        const totalBooks = await Book.countDocuments();
+        return res.json({
+            books, message: "books fetched successfully",
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalBooks / limit),
+                totalItems: totalBooks,
+                pageSize: limit
+            }
+        });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "internal server error" });
@@ -100,8 +126,20 @@ export const getallbookbyauthor = async (req, res) => {
 export const getallbooks = async (req, res) => {
     try {
         await connectDB();
+        const page = parseInt(req.params.page) || 1;
+        const limit = parseInt(req.params.limit) || 10;
+        const skip = (page - 1) * limit;
         const books = await Book.find({});
-        res.status(200).json({ message: "all books fetched successfully", books });
+        const totalBooks = await Book.countDocuments();
+        res.status(200).json({
+            message: "all books fetched successfully", books,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalBooks / limit),
+                totalItems: totalBooks,
+                pageSize: limit
+            }
+        });
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "internal server error" });
