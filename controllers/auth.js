@@ -4,7 +4,7 @@ import express from "express";
 import { connectDB } from "../dbconnect/db.js";
 import { Author } from "../models/Author.js";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-export const login=async(req,res)=>{
+export const login=async(req,res,next)=>{
     try {
         await connectDB();
         const {email,password}=req.body;
@@ -23,10 +23,10 @@ export const login=async(req,res)=>{
         return res.status(200).json({message:"logged in successfully"});
     } catch (error) {
         console.log("errror in login");
-        return res.json({message:"error in login"});
+        next(error);
     }
 }
-export const signin=async(req,res)=>{
+export const signin=async(req,res,next)=>{
     try {
         await connectDB();
         const {email,name,password}=req.body;
@@ -45,14 +45,14 @@ export const signin=async(req,res)=>{
     } catch (error) {
         console.log("error in sign up");
         console.log(error)
-        return res.status(500).json({message:"internal server error"})
+        next(error);
     }
 }
 
 
 
 
-export const forgotpassword=async(req,res)=>{
+export const forgotpassword=async(req,res,next)=>{
     try {
         await connectDB();
         const {email}=req.body;
@@ -70,11 +70,11 @@ export const forgotpassword=async(req,res)=>{
     } catch (error) {
         console.log(error)
         console.log("error in forgot passoword controller");
-        return res.status(500).json({message:"internal server error"});
+        next(error);
     }
 }
 
-export const resetpassword=async(req,res)=>{
+export const resetpassword=async(req,res,next)=>{
     try {
     await connectDB();
     const {npassword}=req.body;
@@ -99,17 +99,17 @@ export const resetpassword=async(req,res)=>{
     } catch (error) {
         console.log(error);
         console.log("error in reset password");
-        return res.status(500).json({message:"internal server error"});
+        next(error);
     }
 }
 
-export const logout=async(req,res)=>{
+export const logout=async(req,res,next)=>{
     try {
         res.clearCookie("token");
         return res.json({success:true,message:"logged out successfully"});
     } catch (error) {
         console.log("error in logging");
-        return res.json({message:"error in logging"});
+        next(error);
     }
 }
 
@@ -122,6 +122,6 @@ export const checkAuth=async(req,res)=>{
         }
         return res.status(200).json({message:"user exits",user});
     } catch (error) {
-        return res.status(500).json({message:"internal server error"});
+        next(error);
     }
 }

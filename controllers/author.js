@@ -3,7 +3,7 @@ import { connectDB } from "../dbconnect/db.js"
 import { Book } from "../models/Book.js";
 import { Author } from "../models/Author.js";
 
-export const addbook = async (req, res) => {
+export const addbook = async (req, res,next) => {
     try {
         await connectDB();
         const { id, author, copies, title, description, edition } = req.body;
@@ -17,10 +17,10 @@ export const addbook = async (req, res) => {
         return res.status(200).json({ message: "successfully added" });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: 'internal server error in add books' });
+        next(error);
     }
 }
-export const updatebook = async (req, res) => {
+export const updatebook = async (req, res,next) => {
     try {
         await connectDB();
         const { id } = req.params; // id will be taken from params;
@@ -39,12 +39,12 @@ export const updatebook = async (req, res) => {
         return res.status(200).json({ message: "successfully updated data" });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ message: "error in updating book" });
+        next(error);
     }
 }
 
 
-export const deletebook = async (req, res) => {
+export const deletebook = async (req, res,next) => {
     try {
         await connectDB();
         const { id } = req.params;
@@ -53,11 +53,11 @@ export const deletebook = async (req, res) => {
         return res.status(404).json({ message: "book not found" });
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: "internal server error" });
+        next(error);
     }
 }
 
-export const getbookbytitle = async (req, res) => {
+export const getbookbytitle = async (req, res,next) => {
     try {
         await connectDB();
         const title = req.query.title;
@@ -86,11 +86,11 @@ export const getbookbytitle = async (req, res) => {
 
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: "internal server error" });
+        next(error);
     }
 }
 
-export const getallbookbyauthor = async (req, res) => {
+export const getallbookbyauthor = async (req, res,next) => {
     try {
         await connectDB();
         const author = req.query.author;
@@ -118,18 +118,18 @@ export const getallbookbyauthor = async (req, res) => {
         });
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: "internal server error" });
+        next(error);
     }
 }
 
 
-export const getallbooks = async (req, res) => {
+export const getallbooks = async (req, res,next) => {
     try {
         await connectDB();
-        const page = parseInt(req.params.page) || 1;
-        const limit = parseInt(req.params.limit) || 10;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        const books = await Book.find({});
+        const books = await Book.find({}).skip(skip).limit(limit).sort({ createdAt: -1 });;
         const totalBooks = await Book.countDocuments();
         res.status(200).json({
             message: "all books fetched successfully", books,
@@ -142,7 +142,7 @@ export const getallbooks = async (req, res) => {
         });
     } catch (error) {
         console.log(error)
-        return res.status(500).json({ message: "internal server error" });
+        next(error);
     }
 }
 

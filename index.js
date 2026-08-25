@@ -6,13 +6,13 @@ import router1 from "./routes/authors.js"
 import router2 from "./routes/books.js"
 import { connectDB } from "./dbconnect/db.js";
 import mongoSanitize from "express-mongo-sanitize"
-
+import rateLimit from "express-rate-limit";
 const app=express();
 dotenv.config();
 app.use(express.json());
 app.use(helmet());
 app.use(cookieParser());
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 app.use("/api/auth",router1);
 app.use("/book",router2);
 
@@ -28,10 +28,21 @@ const limiter = rateLimit({
 // Apply the rate limiting middleware to all requests
 //referenced from docs
 
-
-
-
 app.use(limiter);
+
+//midllware for globle error handling 
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const response = {
+    success: false,
+    message: err.message || 'internal server srror',
+  };
+  if (process.env.NODE_ENV === 'development') {
+    response.stack = err.stack;
+  }
+  res.status(statusCode).json(response);
+});
+
 const start = async () => {
     try {
         await connectDB();
