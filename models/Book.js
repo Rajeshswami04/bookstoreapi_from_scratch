@@ -28,6 +28,5 @@ const BookSchema=new mongoose.Schema({
         default:1
     }
 },{timestamps:true});
-
-
 export const Book=mongoose.model("Book",BookSchema);
+

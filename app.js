@@ -12,7 +12,7 @@ dotenv.config();
 app.use(express.json());
 app.use(helmet());
 app.use(cookieParser());
-// app.use(mongoSanitize());
+app.use(mongoSanitize());//ingetion...
 app.use("/api/auth",router1);
 app.use("/book",router2);
 

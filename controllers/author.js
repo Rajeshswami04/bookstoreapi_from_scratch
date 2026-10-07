@@ -66,8 +66,7 @@ export const getbookbytitle = async (req, res,next) => {
         const skip = (page - 1) * limit;
         // console.log(title)
         if (!title) {
-            return res.status(401).json({ message: "parameter query needed bro " });
-        }
+            return res.status(401).json({ message: "parameter query needed bro " });}
         const book = await Book.find({ title: { $regex: title, $options: 'i' } }).skip(skip).limit(limit).sort({ createdAt: -1 });
         // console.log(book)
         if (book.length === 0) {
