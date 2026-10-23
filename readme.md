@@ -37,7 +37,9 @@ PORT=3000
 NODE_ENV=development
 ```
 
-Create the `bookstore` database in MySQL before starting the API. The app creates its `authors` and `books` tables on startup. `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_DATABASE`, and `JWT_SECRET` are required; `MYSQL_PORT` defaults to `3306`. `PORT` is read by the server when it starts.
+Create the `bookstore` database in MySQL before starting the API. The app creates its `authors` and `books` tables on startup. `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_DATABASE`, and `JWT_SECRET` are required; `MYSQL_PORT` defaults to `3306`. The app also accepts Railway's `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, and `MYSQLDATABASE` variable names. When both forms are set, the underscore form takes precedence. `PORT` is read by the server when it starts.
+
+Railway's `*.railway.internal` database hostname is only reachable by services running inside Railway. For local development, configure `MYSQL_PUBLIC_URL` with Railway's public MySQL connection URL from its TCP proxy. The app prefers `MYSQL_PUBLIC_URL`, then `MYSQL_URL`, then the individual host/user/password/database variables. Keep the Railway internal host for services running within the Railway private network.
 
 Switching the application does not copy existing MongoDB records. Export and import existing authors and books separately before switching production traffic. Existing JWT cookies may also need to be cleared because author IDs will change.
 

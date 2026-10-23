@@ -16,7 +16,7 @@ const createPool = () => {
 
     return mysql.createPool({
         host: MYSQLHOST,
-        port: Number(process.env.MYSQL_PORT) || 3306,
+        port: Number(process.env.MYSQLPORT) || 31819,
         user: MYSQLUSER,
         password: MYSQLPASSWORD || "",
         database: MYSQLDATABASE,
