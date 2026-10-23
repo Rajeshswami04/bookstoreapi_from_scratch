@@ -1,147 +1,138 @@
-import express from "express"
-import { connectDB } from "../dbconnect/db.js"
+import { connectDB } from "../dbconnect/db.js";
 import { Book } from "../models/Book.js";
-import { Author } from "../models/Author.js";
 
-export const addbook = async (req, res,next) => {
+const getPagination = (req) => {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, Number.parseInt(req.query.limit, 10) || 10);
+    return { page, limit, offset: (page - 1) * limit };
+};
+
+const paginationResponse = (page, limit, totalItems) => ({
+    currentPage: page,
+    totalPages: Math.ceil(totalItems / limit),
+    totalItems,
+    pageSize: limit
+});
+
+export const addbook = async (req, res, next) => {
     try {
         await connectDB();
         const { id, author, copies, title, description, edition } = req.body;
         if (!id || !author || !title || !description) {
-            return res.status(401).json({ message: 'all mandatory field are not filled ,id author title desc is needed' });
+            return res.status(401).json({ message: "all mandatory field are not filled ,id author title desc is needed" });
         }
-        const book = new Book({
-            id, author: author.trim(), copies, title: title.trim(), description: description.trim(), edition
+        await Book.create({
+            id,
+            author: author.trim(),
+            copies,
+            title: title.trim(),
+            description: description.trim(),
+            edition
         });
-        await book.save();
         return res.status(200).json({ message: "successfully added" });
     } catch (error) {
-        console.log(error);
         next(error);
     }
-}
-export const updatebook = async (req, res,next) => {
-    try {
-        await connectDB();
-        const { id } = req.params; // id will be taken from params;
-        const allowed = ['copies', 'title', 'description', 'edition', 'author'];
-        const updated = {};
-        Object.keys(req.body).forEach((key) => {
-            if (allowed.includes(key)) {
-                updated[key] = req.body[key];
-            }
-        });
-        if (Object.keys(updated).length === 0) {
-            return res.status(400).json({ message: 'no valid updated are there' });
-        }
-        const update = await Book.findOneAndUpdate({ id }, updated, { new: true, runValidators: true });
-        if (!update) { return res.status(401).json({ message: "no users found" }) }
-        return res.status(200).json({ message: "successfully updated data" });
-    } catch (error) {
-        console.log(error);
-        next(error);
-    }
-}
+};
 
-
-export const deletebook = async (req, res,next) => {
+export const updatebook = async (req, res, next) => {
     try {
         await connectDB();
         const { id } = req.params;
-        const book = await Book.findOneAndDelete({ id });
-        if (book) { return res.status(200).json({ message: 'deleted successfully' }); }
-        return res.status(404).json({ message: "book not found" });
+        const allowed = ["copies", "title", "description", "edition", "author"];
+        const updates = Object.fromEntries(
+            Object.entries(req.body).filter(([key]) => allowed.includes(key))
+        );
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ message: "no valid updated are there" });
+        }
+        const updated = await Book.updateById(id, updates);
+        if (!updated) {
+            return res.status(401).json({ message: "no users found" });
+        }
+        return res.status(200).json({ message: "successfully updated data" });
     } catch (error) {
-        console.log(error)
         next(error);
     }
-}
+};
 
-export const getbookbytitle = async (req, res,next) => {
+export const deletebook = async (req, res, next) => {
     try {
         await connectDB();
-        const title = req.query.title;
-        const page = parseInt(req.params.page) || 1;
-        const limit = parseInt(req.params.limit) || 10;
-        const skip = (page - 1) * limit;
-        // console.log(title)
+        const deleted = await Book.deleteById(req.params.id);
+        if (deleted) {
+            return res.status(200).json({ message: "deleted successfully" });
+        }
+        return res.status(404).json({ message: "book not found" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getbookbytitle = async (req, res, next) => {
+    try {
+        await connectDB();
+        const { title } = req.query;
         if (!title) {
-            return res.status(401).json({ message: "parameter query needed bro " });}
-        const book = await Book.find({ title: { $regex: title, $options: 'i' } }).skip(skip).limit(limit).sort({ createdAt: -1 });
-        // console.log(book)
+            return res.status(401).json({ message: "parameter query needed bro " });
+        }
+        const { page, limit, offset } = getPagination(req);
+        const [book, totalBooks] = await Promise.all([
+            Book.findByTitle(title, limit, offset),
+            Book.countByTitle(title)
+        ]);
         if (book.length === 0) {
             return res.status(401).json({ message: "book is not found" });
         }
-        const totalBooks = await Book.countDocuments();
         return res.status(200).json({
-            message: "books fetched successfully", book,
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(totalBooks / limit),
-                totalItems: totalBooks,
-                pageSize: limit
-            }
+            message: "books fetched successfully",
+            book,
+            pagination: paginationResponse(page, limit, totalBooks)
         });
-
     } catch (error) {
-        console.log(error)
         next(error);
     }
-}
+};
 
-export const getallbookbyauthor = async (req, res,next) => {
+export const getallbookbyauthor = async (req, res, next) => {
     try {
         await connectDB();
-        const author = req.query.author;
-        const page = parseInt(req.params.page) || 1;
-        const limit = parseInt(req.params.limit) || 10;
-        const skip = (page - 1) * limit;
+        const { author } = req.query;
         if (!author) {
             return res.status(400).json({ message: "author is not found in parameter query" });
         }
-
-        const books = await Book.find({ author: { $regex: author, $options: 'i' } }).skip(skip).limit(limit).sort({ createdAt: -1 });
+        const { page, limit, offset } = getPagination(req);
+        const [books, totalBooks] = await Promise.all([
+            Book.findByAuthor(author, limit, offset),
+            Book.countByAuthor(author)
+        ]);
         if (books.length === 0) {
             return res.status(401).json({ message: "book not found" });
         }
-
-        const totalBooks = await Book.countDocuments();
         return res.json({
-            books, message: "books fetched successfully",
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(totalBooks / limit),
-                totalItems: totalBooks,
-                pageSize: limit
-            }
+            books,
+            message: "books fetched successfully",
+            pagination: paginationResponse(page, limit, totalBooks)
         });
     } catch (error) {
-        console.log(error)
         next(error);
     }
-}
+};
 
-
-export const getallbooks = async (req, res,next) => {
+export const getallbooks = async (req, res, next) => {
     try {
         await connectDB();
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-        const books = await Book.find({}).skip(skip).limit(limit).sort({ createdAt: -1 });;
-        const totalBooks = await Book.countDocuments();
-        res.status(200).json({
-            message: "all books fetched successfully", books,
-            pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(totalBooks / limit),
-                totalItems: totalBooks,
-                pageSize: limit
-            }
+        const { page, limit, offset } = getPagination(req);
+        const [books, totalBooks] = await Promise.all([
+            Book.findAll(limit, offset),
+            Book.countAll()
+        ]);
+        return res.status(200).json({
+            message: "all books fetched successfully",
+            books,
+            pagination: paginationResponse(page, limit, totalBooks)
         });
     } catch (error) {
-        console.log(error)
         next(error);
     }
-}
-
+};

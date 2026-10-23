@@ -5,14 +5,12 @@ import cookieParser from "cookie-parser";
 import router1 from "./routes/authors.js"
 import router2 from "./routes/books.js"
 import { connectDB } from "./dbconnect/db.js";
-import mongoSanitize from "express-mongo-sanitize"
 import rateLimit from "express-rate-limit";
 const app=express();
 dotenv.config();
 app.use(express.json());
 app.use(helmet());
 app.use(cookieParser());
-app.use(mongoSanitize());//ingetion...
 app.use("/api/auth",router1);
 app.use("/book",router2);
 
@@ -50,7 +48,7 @@ const start = async () => {
             console.log(`API listening on port ${process.env.PORT}`);
         });
     } catch (error) {
-        console.error("Unable to connect to MongoDB", error);
+        console.error("Unable to connect to MySQL", error);
         process.exit(1);
     }
 };

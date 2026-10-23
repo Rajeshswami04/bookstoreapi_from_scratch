@@ -1,6 +1,6 @@
 # Bookstore API
 
-A REST API for managing books and authors, built with Node.js, Express, MongoDB, and Mongoose. Authentication uses JWTs stored in secure, HTTP-only cookies.
+A REST API for managing books and authors, built with Node.js, Express, and MySQL. Authentication uses JWTs stored in secure, HTTP-only cookies.
 
 ## Features
 
@@ -14,7 +14,7 @@ A REST API for managing books and authors, built with Node.js, Express, MongoDB,
 ## Requirements
 
 - Node.js 18 or newer
-- MongoDB database, local or hosted
+- MySQL 8 or newer, local or hosted
 
 ## Installation
 
@@ -27,13 +27,19 @@ npm install
 Create a `.env` file in the project root:
 
 ```env
-MONGO_URI=mongodb://127.0.0.1:27017/bookstore
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-mysql-password
+MYSQL_DATABASE=bookstore
 JWT_SECRET=replace-with-a-long-random-secret
 PORT=3000
 NODE_ENV=development
 ```
 
-`MONGO_URI` and `JWT_SECRET` are required. `PORT` is read by the server when it starts.
+Create the `bookstore` database in MySQL before starting the API. The app creates its `authors` and `books` tables on startup. `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_DATABASE`, and `JWT_SECRET` are required; `MYSQL_PORT` defaults to `3306`. `PORT` is read by the server when it starts.
+
+Switching the application does not copy existing MongoDB records. Export and import existing authors and books separately before switching production traffic. Existing JWT cookies may also need to be cleared because author IDs will change.
 
 ## Running the API
 
@@ -184,11 +190,11 @@ Searches are case-insensitive and match partial titles or author names. Search e
 ## Project structure
 
 ```text
-index.js                         Express app and server startup
+app.js                           Express app and server startup
 controllers/                     Request handlers
-dbconnect/db.js                  MongoDB connection
+dbconnect/db.js                  MySQL connection and table initialization
 middleware/verifyToken.js        JWT cookie middleware
-models/                          Mongoose schemas
+models/                          MySQL data access
 routes/                          Auth and book routes
 utils/generateTokenAndSetCookie.js
 																 JWT creation and cookie settings
